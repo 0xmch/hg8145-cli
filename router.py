@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""router: a command line for the Huawei HG8145V5 fibre router.
+"""router: a command line for the Huawei HG8145V5 fiber router.
 
 It has no API, and on the LAN it answers only through its web interface. That interface is a thin
 layer over a settings tree, so this does what its pages do:
@@ -277,14 +277,14 @@ def cmd_status(r, args):
         "model": info["ModelName"], "firmware": info["SoftwareVersion"],
         "uptime_s": int(uptime.group(1)) if uptime else None,
         "internet": [{"name": w.get("Name"), "status": w.get("ConnectionStatus") or w.get("Status"), "ip": w.get("IPAddress") or w.get("ExternalIPAddress")} for w in internet],
-        "fibre": {"link": optics.get("LinkStatus"), "rx_dbm": optics.get("revOpticPower"), "tx_dbm": optics.get("transOpticPower"), "temp_c": optics.get("temperature")},
+        "fiber": {"link": optics.get("LinkStatus"), "rx_dbm": optics.get("revOpticPower"), "tx_dbm": optics.get("transOpticPower"), "temp_c": optics.get("temperature")},
         "wifi": [{"band": band(w["Channel"]), "ssid": w["ssid"], "on": w["enable"] == "1", "channel": w["Channel"]} for w in wifi],
         "devices": {"online": online, "remembered": len(devices), "reserved": len(r.reserved())},
     }
     lines = [("router", f"{data['model']}, firmware {data['firmware']}" + (f", up {duration(data['uptime_s'])}" if uptime else ""))]
     lines += [("internet", f"{w['status']}, {w['ip']} ({w['name']})") for w in data["internet"]] or [("internet", "no connection found")]
-    fibre = data["fibre"]
-    lines.append(("fibre", f"{fibre['link']}, receiving {fibre['rx_dbm']} dBm, sending {fibre['tx_dbm']} dBm, {fibre['temp_c']} °C"))
+    fiber = data["fiber"]
+    lines.append(("fiber", f"{fiber['link']}, receiving {fiber['rx_dbm']} dBm, sending {fiber['tx_dbm']} dBm, {fiber['temp_c']} °C"))
     lines += [("wifi", f"{w['band']} {'on' if w['on'] else 'off'}, channel {w['channel']}, {w['ssid']}") for w in data["wifi"]]
     lines.append(("devices", f"{online} online, {len(devices)} remembered, {data['devices']['reserved']} reserved"))
     show(args, data, table(lines))
@@ -413,7 +413,7 @@ def parser():
 
     yes = (("-y", "--yes"), {"action": "store_true", "help": "don't ask first"})
     device = (("device",), {"help": "name, address or MAC"})
-    command("status", cmd_status, "model, internet, fibre, Wi-Fi, device counts")
+    command("status", cmd_status, "model, internet, fiber, Wi-Fi, device counts")
     command("devices", cmd_devices, "what's online", (("-a", "--all"), {"action": "store_true", "help": "and everything it remembers"}))
     command("wifi", cmd_wifi, "the networks, and who's on them with what signal")
     command("reserved", cmd_reserved, "addresses reserved for devices")

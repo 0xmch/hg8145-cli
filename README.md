@@ -1,13 +1,13 @@
 # router
 
-A command line for the Huawei HG8145V5 fibre router (an EchoLife ONT), so you can see what's on
+A command line for the Huawei HG8145V5 fiber router (an EchoLife ONT), so you can see what's on
 your network and change settings without clicking through its web pages.
 
 ```
 $ router
 router    HG8145V5, firmware V5R0xxxxxxxx, up 12d 4h
 internet  Connected, 203.0.113.7 (INTERNET)
-fibre     ok, receiving -21.50 dBm, sending 2.30 dBm, 48 °C
+fiber     ok, receiving -21.50 dBm, sending 2.30 dBm, 48 °C
 wifi      2.4 GHz on, channel 9, HomeNet
 wifi      5 GHz on, channel 36, HomeNet-5G
 devices   6 online, 31 remembered, 4 reserved
@@ -53,7 +53,7 @@ password_command = ["security", "find-generic-password", "-s", "router", "-w"]  
 
 | | |
 |---|---|
-| `router` or `router status` | model, internet, fibre, Wi-Fi, device counts |
+| `router` or `router status` | model, internet, fiber, Wi-Fi, device counts |
 | `router devices [-a]` | what's online, or everything it remembers |
 | `router wifi` | the networks, and who's on them with what signal |
 | `router reserved` | addresses reserved for devices |
