@@ -18,6 +18,7 @@ import json
 import os
 import re
 import shlex
+import ssl
 import subprocess
 import sys
 import tomllib
@@ -114,6 +115,22 @@ def without_secrets(found):
     return clean
 
 
+def tls_port(front):
+    """Newer firmware answers plain http with nothing but a page sending the browser to TLS, on the
+    port this returns. A login page may mention the port too, but it has the login form."""
+    found = re.search(r"var SSLPort\s*=\s*'(\d+)'", front)
+    return found.group(1) if found and "txt_Username" not in front else None
+
+
+def unverified_tls():
+    """That firmware's certificate comes from Huawei's own CA and names the model, not an address,
+    so there's nothing to check it against."""
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
 def login_state(front):
     """(locked, bad attempts, attempts allowed), by the login page's own rule. Its countdown runs
     after any bad attempt, but it only locks once the attempts reach the limit."""
@@ -132,7 +149,7 @@ class Router:
         self.host = "http://" + config["host"]
         self.password = password
         self.cookie = "Cookie=body:Language:english:id=-1"
-        self.opener = urllib.request.build_opener(_NoRedirect)
+        self.opener = urllib.request.build_opener(_NoRedirect, urllib.request.HTTPSHandler(context=unverified_tls()))
 
     def request(self, path, fields=None):
         data = None if fields is None else urllib.parse.urlencode(fields).encode()
@@ -156,7 +173,12 @@ class Router:
         return self.request(path, fields or {})[1]
 
     def __enter__(self):
-        locked, _, _ = login_state(self.get("/"))
+        front = self.get("/")
+        port = tls_port(front)
+        if port:
+            self.host = f"https://{self.config['host']}:{port}"
+            front = self.get("/")
+        locked, _, _ = login_state(front)
         if locked:
             raise Error("the login is locked after bad attempts. Try again in a minute")
         token = self.post("/asp/GetRandCount.asp").strip()
@@ -168,9 +190,9 @@ class Router:
             "x.X_HW_Token": token,
         })
         for cookie in headers.get_all("Set-Cookie") or []:
-            found = re.match(r"Cookie=([^;]*sid=[^;]+)", cookie)
+            found = re.match(r"Cookie\w*=[^;]*sid=[^;]+", cookie)  # Cookie= or, over TLS, CookieHttps=
             if found:
-                self.cookie = "Cookie=" + found.group(1)
+                self.cookie = found.group(0)
                 return self
         _, bad, limit = login_state(self.get("/"))
         raise Error(f"the router refused the login ({bad} of {limit} bad attempts before it locks). "
