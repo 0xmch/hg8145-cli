@@ -57,6 +57,12 @@ class Pages(unittest.TestCase):
         self.assertTrue(R.login_state(page % ("0", "0", "1"))[0])
 
 
+    def test_only_the_page_that_just_redirects_means_tls(self):
+        self.assertEqual(R.tls_port("var SSLPort ='80'; window.location='https://'"), "80")
+        self.assertIsNone(R.tls_port("var SSLPort ='80'; <input id=\"txt_Username\" />"))
+        self.assertIsNone(R.tls_port("var LoginTimes = '0';"))
+
+
 class Finding(unittest.TestCase):
     devices = [
         device("10.0.0.2", "aa:aa:aa:aa:aa:01", "Phone-9", "Offline"),
@@ -176,7 +182,7 @@ class FakeRouter(http.server.BaseHTTPRequestHandler):
             good = fields["PassWord"] == base64.b64encode(b"right").decode() and fields["x.X_HW_Token"] == "login-token"
             if not good:
                 s.bad += 1
-            self.reply("", cookie="Cookie=sid=abc:Language:english:id=1;path=/;HttpOnly" if good else None)
+            self.reply("", cookie=f"{s.cookie_name}=sid=abc:Language:english:id=1;path=/;HttpOnly" if good else None)
         elif path == R.TOKEN_PAGE:
             self.reply("session-token")
         elif path == "/logout.cgi":
@@ -204,6 +210,7 @@ class Session(unittest.TestCase):
         server.bad = server.left = server.logins = server.logouts = 0
         server.posts = []
         server.ignore_changes = False
+        server.cookie_name = "Cookie"
         server.reserved = {1: ("10.0.0.9", "aa:aa:aa:aa:aa:09")}
         server.devices = [device("10.0.0.4", "aa:aa:aa:aa:aa:03", "plug"), device("10.0.0.9", "aa:aa:aa:aa:aa:09", "box")]
         threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -221,6 +228,11 @@ class Session(unittest.TestCase):
         with self.assertRaisesRegex(R.Error, "1 of 3"), R.Router(self.config, "wrong"):
             pass
         self.assertEqual(self.server.logins, 1)
+
+    def test_the_session_cookie_can_go_by_its_tls_name(self):
+        self.server.cookie_name = "CookieHttps"
+        self.run_command(R.cmd_reserved)
+        self.assertEqual((self.server.logins, self.server.logouts), (1, 1))
 
     def test_a_locked_login_is_not_even_tried(self):
         self.server.bad, self.server.left = 3, 60

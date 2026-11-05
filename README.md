@@ -3,6 +3,10 @@
 A command line for the Huawei HG8145V5 fiber router (an EchoLife ONT), so you can see what's on
 your network and change settings without clicking through its web pages.
 
+It also works with the HG8145X7, which serves its web interface over TLS. `status`, `devices`,
+`reserved`, `wifi`, `forwards` and `pages` are tested there; `reserve`, `unreserve`, `set` and
+`reboot` aren't yet.
+
 ```
 $ router
 router    HG8145V5, firmware V5R0xxxxxxxx, up 12d 4h
